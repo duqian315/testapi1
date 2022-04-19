@@ -1,0 +1,980 @@
+openapi: '3.0.0'
+info:
+  version: 1.0.0
+  title: '１、印刷管理API'
+  description: '印刷管理API'
+servers:
+  - url: http://localhost/api/v1
+tags:
+  - name: '1.ログイン／認証'
+    description: 'IDとパスワードで本システムにログインする'
+  - name: '2.レイアウト管理'
+    description: 'レイアウトファイルの登録、更新、削除'
+  - name: '3.プリンター管理'
+    description: '・プリンター（IP、ポート番号などの情報）の登録、更新、削除<br>・プリンター状態の確認'
+  - name: '4.印刷依頼元管理'
+    description: '印刷依頼元情報（クライアントID、シークレット、IP）の参照、登録、更新、削除'
+  - name: '5.印刷管理'
+    description: '・印刷結果の確認<br>・印刷キューの確認、印刷指示のキャンセル<br>・印刷履歴確認'
+  - name: '6.ログ閲覧'
+    description: '・ログの検索・閲覧<br>・採取するログは以下を想定<br>APIの動作ログ<br>画面の操作履歴'
+
+paths:
+  /login:
+    post:
+      tags:
+        - '1.ログイン／認証'
+      summary: 'ログインします。'
+      description: 'ユーザIDとパスワードを入力し、ログインボダンをクリックし、ログインします。'
+      requestBody:
+        description: 'リクエストボディ'
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: 
+              $ref: '#/components/schemas/AuthForm'
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '403':
+          description: '実行権限がない場合に発生します。'
+
+  /layouts:
+    get:
+      tags:
+        - '2.レイアウト管理'
+      summary: 'レイアウト一覧の取得'
+      description: 'レイアウト一覧を取得します。'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Layout'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+    post:
+      tags:
+        - '2.レイアウト管理'
+      summary: 'レイアウトの登録'
+      description: ''
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: ' '
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutAdd'
+        required: true
+      responses:
+        '201':
+          description: '正常にレイアウトが登録されたことを意味します。'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '409':
+          description: 'すでに登録済みのレイアウトを登録しようとした（二重登録）場合に発生します。'
+
+  /layout/{id}:
+    get:
+      tags:
+        - '2.レイアウト管理'
+      summary: 'レイアウトの取得'
+      description: '指定したレイアウトを取得します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'レイアウトのIDを指定します。'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Layout'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのレイアウトが存在しない場合に発生します。'
+    put:
+      tags:
+        - '2.レイアウト管理'
+      summary: 'レイアウトの更新'
+      description: '指定したレイアウトを更新します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: '更新するレイアウトのIDを指定します。'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: 'リクエストボディ'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutUpdate'
+        required: true
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Layout'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのレイアウトが存在しない場合に発生します。'
+
+    delete:
+      tags:
+        - '2.レイアウト管理'
+      summary: 'レイアウトの削除'
+      description: '指定したレイアウトを削除します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'レイアウトID'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのレイアウトが存在しない場合に発生します。'
+
+  /printers:
+    get:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンター一覧の取得'
+      description: '登録されたすべてのプリンターを取得します。'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Printer'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+
+    post:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンターの登録'
+      description: 'プリンターを登録します。'
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: 'リクエストボディ'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterAdd'
+        required: true
+      responses:
+        '201':
+          description: '正常にプリンターが登録されたことを意味します。'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '409':
+          description: 'すでに登録済みのプリンターを登録しようとした（二重登録）場合に発生します。'
+
+  /printers/{id}:
+    get:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンターの取得'
+      description: '指定したプリンターの情報を取得します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'プリンターのIDを指定します。'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのプリンターが存在しない場合に発生します。'
+
+    put:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンターの更新'
+      description: '指定したプリンターの情報を更新します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'プリンターのIDを指定します。'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: 'リクエストボディ'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterUpdate'
+        required: true
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Printer'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのプリンターが存在しない場合に発生します。'
+
+    delete:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンターの登録解除'
+      description: '指定したプリンターIDのプリンターの登録を解除します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'プリンターIDを指定します'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたIDのプリンターが存在しない場合に発生します。'
+          
+  /printers/{id}/result:
+    get:
+      tags:
+        - '3.プリンター管理'
+      summary: 'プリンター状態の取得'
+      description: 'プリンター状態を取得します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: '印刷中ID'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintResult'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '403':
+          description: '実行権限がない場合に発生します。'
+
+  /requester:
+    get:
+      tags:
+        - '4.印刷依頼元管理'
+      summary: '印刷依頼元情報の一覧'
+      description: '印刷依頼元情報一覧を取得します。'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requester'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+  
+    post:
+      tags:
+        - '4.印刷依頼元管理'
+      summary: '印刷依頼元情報の登録'
+      description: '印刷依頼元情報を登録します。'
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: 'リクエストボディ'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequesterAdd'
+        required: true
+      responses:
+        '201':
+          description: '正常に依頼元が登録されたことを意味します。'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '409':
+          description: 'すでに登録済みの依頼元を登録しようとした（二重登録）場合に発生します。'
+  
+  /requester/{name}:
+    get:
+      tags:
+        - '4.印刷依頼元管理'
+      summary: '印刷依頼元情報の参照'
+      description: '印刷依頼元情報（クライアントID、シークレット、IP）を参照します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'name'
+          in: 'path'
+          description: '依頼元名称を指定します。'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Requester'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定された依頼元名称が存在しない場合に発生します。'
+          
+    put:
+      tags:
+        - '4.印刷依頼元管理'
+      summary: '印刷依頼元情報の更新'
+      description: '印刷依頼元情報を更新します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'name'
+          in: 'path'
+          description: '更新する依頼元名称を指定します。'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: 'リクエストボディ'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequesterUpdate'
+        required: true
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Requester'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定された依頼元名称が存在しない場合に発生します。'
+
+    delete:
+      tags:
+        - '4.印刷依頼元管理'
+      summary: '印刷依頼元情報の削除'
+      description: '印刷依頼元情報を削除します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'name'
+          in: 'path'
+          description: '依頼元名称を指定します'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定された依頼元名称が存在しない場合に発生します。'
+ 
+  /artifacts/{artifactId}/result:
+    get:
+      tags:
+        - '5.印刷管理'
+      summary: '印刷結果の確認'
+      description: '印刷結果を確認します'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'artifactId'
+          in: 'path'
+          description: '成果物ID'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintResult'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '403':
+          description: '実行権限がない場合に発生します。'
+      
+  /artifacts/cue:
+    get:
+      tags:
+        - '5.印刷管理'
+      summary: '印刷キューの確認'
+      description: '印刷キューを確認します'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrintResult'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+          
+  /artifacts/{artifactId}/cancel:
+    put:
+      tags:
+        - '5.印刷管理'
+      summary: '印刷のキャンセール'
+      description: '印刷をキャンセーします。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'artifactId'
+          in: 'path'
+          description: '成果物ID'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintResult'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '403':
+          description: '実行権限がない場合に発生します。'
+      
+  /artifacts/history:
+    get:
+      tags:
+        - '5.印刷管理'
+      summary: '印刷履歴の確認'
+      description: '印刷履歴を確認します'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PrintResult'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+      
+  /log:
+    get:
+      tags:
+        - '6.ログ閲覧'
+      summary: 'ログの一覧'
+      description: 'ログ一覧を閲覧します。'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+  
+  /log/{id}:
+    get:
+      tags:
+        - '6.ログ閲覧'
+      summary: 'ログ閲覧'
+      description: 'ログを閲覧します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'ログID。'
+          required: true
+          schema:
+            type: string  
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '400':
+          description: 'リクエスト内容が不正な場合に発生します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+          
+    delete:
+      tags:
+        - '6.ログ閲覧'
+      summary: 'ログ削除'
+      description: '指定したログを削除します。'
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: 'id'
+          in: 'path'
+          description: 'ログID'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '正常に処理が実行されたことを意味します。'
+        '401':
+          description: '認証情報が不正な場合に発生します。'
+        '404':
+          description: '指定されたログが存在しない場合に発生します。'
+          
+components:
+  schemas:
+    AuthForm:
+      type: object
+      required: [grant_type, assertion]
+      properties:
+        uesrID:
+          type: string
+          description: 'ユーザID'
+        password:
+          type: string
+          description: 'パスワード'
+      title: '認証データ'
+      description: '認証データ'
+      
+    Token:
+      type: object
+      properties:
+        expiration:
+          type: integer
+          format: 'int64'
+          example: '1442046911540'
+          description: 'アクセストークンの有効期限（UTCで測定された1970-01-01T0:0:0Zからの秒数）です。期限を過ぎると、アクセストークンは無効となり、再度認証する必要があります。'
+        token:
+          type: string
+          example: 'fa074d728eef1bfb1da897de1f64b53dae7857e87dd0b8b96d9f65e06da43e9f'
+          description: 'アクセストークン、APIの呼び出しの際にリクエストヘッダーに付与します。'
+      title: 'アクセストークン'
+      description: 'アクセストークン'
+          
+    Layout:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 'レイアウトID'
+        name:
+          type: string
+          description: 'レイアウト名称'
+        size:
+          type: integer
+          description: 'サイズ'
+        updateTime:
+          type: string
+          description: '最終更新時間'
+          format : date-time
+          example: '2022-07-21T17:32:28Z'
+        description:
+          type: string
+          description: '備考'
+      title: 'レイアウト情報'
+      description: 'レイアウト情報'
+      
+    LayoutAdd:
+      type: object
+      required: [id, name, size]
+      properties:
+        id:
+          type: string
+          description: 'レイアウトID'
+        name:
+          type: string
+          description: 'レイアウト名称'
+        size:
+          type: integer
+          description: 'サイズ'
+        description:
+          type: string
+          description: '備考'
+      title: '登録用レイアウト情報'
+      description: '登録用レイアウト情報'
+      
+    LayoutUpdate:
+      type: object
+      required: [name, size, lastUpdateTime]
+      properties:
+        name:
+          type: string
+          description: 'レイアウト名称'
+        size:
+          type: integer
+          description: 'サイズ'
+        updateTime:
+          type: string
+          description: '最終更新時間'
+          format : date-time
+          example: '2022-07-21T17:32:28Z'
+        description:
+          type: string
+          description: '備考'
+      title: '更新用レイアウト情報'
+      description: '更新用レイアウト情報'
+    
+    PrintResult:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 'ステータスコード'
+        name:
+          type: string
+          description: 'ステータ名'
+      title: '印刷結果'
+      description: '印刷結果'
+    
+    Printer:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 'プリンターID'
+        name:
+          type: string
+          description: 'プリンター名称'
+        printerType:
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - R408v-ex
+             * `2` - CT4-LX
+             * `2` - PW208NX
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        inputPort:
+          type: integer
+          description: 'インプットポート'
+        outputPort:
+          type: integer
+          description: 'アウトポート'
+        protocol: 
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - ステータス4(ENQ応答)
+             * `2` - ステータス4(周期応答)
+             * `2` - ステータス3
+        state:
+          type: string
+          description: 'プリンター状態'
+        description:
+          type: string
+          description: '備考'
+        updateTime:
+          type: string
+          description: '更新日時'
+          format : date-time
+          example: '2022-07-21T17:32:28Z'
+      title: 'プリンター情報'
+      description: 'プリンター情報'
+      
+    PrinterAdd:
+      type: object
+      required: [id, printerType, ipAddress, inputPort, outputPort, protocol]
+      properties:
+        id:
+          type: string
+          description: 'プリンターID'
+        name:
+          type: string
+          description: 'プリンター名称'
+        printerType:
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - R408v-ex
+             * `2` - CT4-LX
+             * `2` - PW208NX
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        inputPort:
+          type: integer
+          description: 'インプットポート'
+          default: 1024
+        outputPort:
+          type: integer
+          description: 'アウトポート'
+          default: 1025
+        protocol: 
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - ステータス4(ENQ応答)
+             * `2` - ステータス4(周期応答)
+             * `2` - ステータス3
+          default: 1
+        description:
+          type: string
+          description: '備考'
+      title: '登録用プリンター情報'
+      description: '登録用プリンター情報'
+      
+    PrinterUpdate:
+      type: object
+      required: [printerType, ipAddress, inputPort, outputPort, protocol, lastUpdateTime]
+      properties:
+        name:
+          type: string
+          description: 'プリンター名称'
+        printerType:
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - R408v-ex
+             * `2` - CT4-LX
+             * `2` - PW208NX
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        inputPort:
+          type: integer
+          description: 'インプットポート'
+          default: 1024
+        outputPort:
+          type: integer
+          description: 'アウトポート'
+          default: 1025
+        protocol: 
+          type: integer
+          enum: [1, 2, 3]
+          description: >
+            プリンタータイプ:
+             * `1` - ステータス4(ENQ応答)
+             * `2` - ステータス4(周期応答)
+             * `2` - ステータス3
+          default: 1
+        description:
+          type: string
+          description: '備考'
+        lastUpdateTime:
+          type: string
+          description: '前回更新日時（排他制御用）'
+          format : date-time
+          example: '2022-07-21T17:32:28Z'
+      title: '更新用プリンター情報'
+      description: '更新用プリンター情報'
+      
+    Requester:
+      type: object
+      properties:
+        name:
+          type: string
+          description: '依頼元名称'
+          maxLength: 60
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        printerId:
+          type: string
+          description: 'プリンターID'
+        description:
+          type: string
+          description: '備考'
+      title: '依頼元情報'
+      description: '依頼元情報'
+      
+    RequesterAdd:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: '依頼元名称'
+          maxLength: 60
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        printerId:
+          type: string
+          description: 'プリンターID'
+        description:
+          type: string
+          description: '備考'
+      title: '登録用依頼元情報'
+      description: '登録用依頼元情報'
+      
+    RequesterUpdate:
+      type: object
+      required: [ipAddress]
+      properties:
+        ipAddress:
+          type: string
+          description: 'IPアドレス'
+          format: ipv4
+        printerId:
+          type: string
+          description: 'プリンターID'
+        description:
+          type: string
+          description: '備考'
+      title: '更新用依頼元情報'
+      description: '更新用依頼元情報'
+  
+    Log:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 'ログID'
+        category:
+          type: string
+          description: 'カテゴリ'
+        action:
+          type: string
+          description: 'アクション'
+        state:
+          type: string
+          description: '状態'
+        updatetime:
+          type: string
+          description: '更新日時'
+          format : date-time
+          example: '2022-07-21T17:32:28Z'
+        message:
+          type: string
+          description: 'メッセージ'
+        artifactId:
+          type: string
+          format: uuid
+          description: '作成する成果物のIDを指定します。'
+        printerId:
+          type: string
+          format : uuid
+          description: 'プリンターID'
+        username:
+          type: string
+          description: 'ユーザ名'
+      title: 'ログ'
+      description: 'ログ'
+      
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
